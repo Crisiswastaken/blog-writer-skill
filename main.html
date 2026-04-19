@@ -1,0 +1,540 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Writer Skill — LLM Ensemble Evaluation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f7;
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #aeaeb2;
+      --border: #d2d2d7;
+      --border-light: #e5e5ea;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1e;
+        --bg-secondary: #2c2c2e;
+        --text-primary: #f5f5f7;
+        --text-secondary: #aeaeb2;
+        --text-tertiary: #636366;
+        --border: #3a3a3c;
+        --border-light: #3a3a3c;
+      }
+      .badge-win { background: #1a3306 !important; color: #7cc550 !important; }
+      .badge-div { background: #3d2a00 !important; color: #f0a832 !important; }
+      .pill-v4  { background: #1e1c40 !important; color: #9b96f5 !important; }
+      .pill-v2  { background: #0a2218 !important; color: #3dd48c !important; }
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      padding: 0 20px;
+    }
+
+    .page {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 52px 0 88px;
+    }
+
+    /* ── Header ── */
+    .header { margin-bottom: 52px; }
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+    .header-title {
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .header-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 44px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+    hr.divider {
+      border: none;
+      border-top: 0.5px solid var(--border-light);
+      margin: 44px 0;
+    }
+
+    /* ── Cards ── */
+    .card-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 680px) { .card-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 340px) { .card-grid-4 { grid-template-columns: 1fr; } }
+
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 600px) { .card-grid-3 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+    .card-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .card-value { font-size: 22px; font-weight: 500; }
+    .card-sub   { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ── Radar ── */
+    .radar-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .toggle-btn {
+      font-size: 12px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 0.5px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
+    }
+    .toggle-btn.active { color: #fff; border-color: transparent; }
+    .radar-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── Parameter bars ── */
+    .eval-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+    .param-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+    @media (max-width: 480px) {
+      .param-row { grid-template-columns: 1fr; gap: 3px; margin-bottom: 14px; }
+      .param-name { text-align: left !important; }
+    }
+    .param-name { font-size: 12px; color: var(--text-secondary); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-group { display: flex; flex-direction: column; gap: 2px; }
+    .bar-wrap  { display: flex; align-items: center; gap: 6px; }
+    .bar       { height: 10px; border-radius: 2px; transition: width 0.3s; }
+    .bar-val   { font-size: 10px; color: var(--text-tertiary); min-width: 34px; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ranktable { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ranktable th {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 0.5px solid var(--border-light);
+    }
+    .ranktable td { padding: 7px 8px; color: var(--text-primary); border-bottom: 0.5px solid var(--border-light); }
+    .ranktable tr:last-child td { border-bottom: none; }
+    .ranktable tbody tr:last-child { background: var(--bg-secondary); }
+
+    .rank-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+    .pill-v4 { background: #EEEDFE; color: #3C3489; }
+    .pill-v2 { background: #E1F5EE; color: #085041; }
+
+    .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+    .badge-win { background: #EAF3DE; color: #27500A; }
+    .badge-div { background: #FAEEDA; color: #633806; }
+
+    /* ── Champion cards ── */
+    .champ-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .champ-label  { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .champ-name   { font-size: 17px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+    .champ-detail { font-size: 12px; color: var(--text-secondary); }
+    .champ-score  { font-size: 26px; font-weight: 500; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-eyebrow">Blog Writer Skill</div>
+    <h1 class="header-title">LLM Ensemble Evaluation</h1>
+    <p class="header-subtitle">4 skill versions evaluated by 3 LLM judges across 10 writing parameters. Scores range 0–10.</p>
+  </header>
+
+  <!-- ── Radar chart ── -->
+  <section class="section" aria-label="Performance radar">
+    <h2 class="section-title">Performance radar</h2>
+
+    <div class="radar-controls" id="controls"></div>
+    <div class="radar-legend" id="legend"></div>
+    <svg id="radar" viewBox="0 0 560 480" width="100%" role="img" aria-label="Radar chart comparing 4 blog versions across 10 evaluation parameters"></svg>
+    <div class="card-grid-4" style="margin-top:14px;">
+      <div class="card"><div class="card-label">Alpha</div><div class="card-value" style="color:#378ADD;">7.84</div><div class="card-sub">Ensemble avg</div></div>
+      <div class="card"><div class="card-label">V2</div><div class="card-value" style="color:#1D9E75;">8.64</div><div class="card-sub">Ensemble avg</div></div>
+      <div class="card"><div class="card-label">V3</div><div class="card-value" style="color:#D4537E;">8.65</div><div class="card-sub">Ensemble avg</div></div>
+      <div class="card"><div class="card-label">V4</div><div class="card-value" style="color:#7F77DD;">8.97</div><div class="card-sub">Ensemble avg · champion</div></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Highlights ── -->
+  <section class="section" aria-label="Evaluation highlights">
+    <h2 class="section-title">Highlights</h2>
+    <div class="card-grid-4">
+      <div class="card"><div class="card-label">Ensemble winner</div><div class="card-value">V4</div><div class="card-sub">8.97 avg · 7 of 10 params</div></div>
+      <div class="card"><div class="card-label">Humanness champion</div><div class="card-value">V3</div><div class="card-sub">9.10 voice · 9.03 likeness</div></div>
+      <div class="card"><div class="card-label">Conciseness champion</div><div class="card-value">Alpha</div><div class="card-sub">8.73 ensemble avg</div></div>
+      <div class="card"><div class="card-label">Divergent evaluator</div><div class="card-value">Grok</div><div class="card-sub">Ranked V2 #1, not V4</div></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Parameter bars ── -->
+  <section class="section" aria-label="Parameter breakdown">
+    <h2 class="section-title">Parameter breakdown — ensemble averages</h2>
+    <div class="eval-legend">
+      <span><span class="legend-dot" style="background:#378ADD;"></span>Alpha</span>
+      <span><span class="legend-dot" style="background:#1D9E75;"></span>V2</span>
+      <span><span class="legend-dot" style="background:#D4537E;"></span>V3</span>
+      <span><span class="legend-dot" style="background:#7F77DD;"></span>V4</span>
+    </div>
+    <div id="params"></div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Rankings table ── -->
+  <section class="section" aria-label="Per-model rankings">
+    <h2 class="section-title">Per-model overall average</h2>
+    <div class="table-wrap">
+      <table class="ranktable">
+        <thead>
+          <tr>
+            <th>Evaluator</th><th>Alpha</th><th>V2</th><th>V3</th><th>V4</th><th>Ranked #1</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:500;">ChatGPT</td>
+            <td>7.92</td><td>8.61</td><td>8.84</td>
+            <td style="font-weight:500;color:#7F77DD;">9.17</td>
+            <td><span class="rank-pill pill-v4">V4</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:500;">Gemini</td>
+            <td>7.61</td><td>8.31</td><td>8.54</td>
+            <td style="font-weight:500;color:#7F77DD;">8.88</td>
+            <td><span class="rank-pill pill-v4">V4</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:500;">Grok <span class="badge badge-div">divergent</span></td>
+            <td>8.00</td>
+            <td style="font-weight:500;color:#1D9E75;">9.00</td>
+            <td>8.58</td><td>8.86</td>
+            <td><span class="rank-pill pill-v2">V2</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:500;">Ensemble</td>
+            <td>7.84</td><td>8.64</td><td>8.65</td>
+            <td style="font-weight:500;color:#7F77DD;">8.97</td>
+            <td><span class="rank-pill pill-v4">V4</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── Champions ── -->
+  <section class="section" aria-label="Category champions">
+    <h2 class="section-title">Category champions</h2>
+    <div class="card-grid-3">
+      <div class="champ-card">
+        <div>
+          <div class="champ-label">Overall champion</div>
+          <div class="champ-name">V4</div>
+          <div class="champ-detail">No weak param · min 8.67</div>
+        </div>
+        <div class="champ-score" style="color:#7F77DD;">8.97</div>
+      </div>
+      <div class="champ-card">
+        <div>
+          <div class="champ-label">Most human</div>
+          <div class="champ-name">V3</div>
+          <div class="champ-detail">Fuzzy memory · lived texture</div>
+        </div>
+        <div class="champ-score" style="color:#D4537E;">9.10</div>
+      </div>
+      <div class="champ-card">
+        <div>
+          <div class="champ-label">Most concise</div>
+          <div class="champ-name">Alpha</div>
+          <div class="champ-detail">Ruthless editing · clean draft</div>
+        </div>
+        <div class="champ-score" style="color:#378ADD;">8.73</div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.page -->
+
+<script>
+const PARAMS = [
+  "Human-likeness", "Natural voice", "Emotional engmt",
+  "Memorability", "Flow & rhythm", "Clarity",
+  "Specificity", "Persuasiveness", "Conciseness", "Overall impact"
+];
+
+const VERSIONS = [
+  { label: "Alpha", key: "a", color: "#378ADD", fill: "rgba(55,138,221,0.12)", dash: [6,4],
+    scores: [7.53, 7.77, 7.10, 7.30, 8.10, 9.00, 7.20, 7.90, 8.73, 7.80] },
+  { label: "V2",    key: "b", color: "#1D9E75", fill: "rgba(29,158,117,0.12)", dash: [4,3],
+    scores: [8.63, 8.70, 8.27, 8.53, 8.70, 9.00, 9.07, 8.83, 7.83, 8.83] },
+  { label: "V3",    key: "c", color: "#D4537E", fill: "rgba(212,83,126,0.12)", dash: [2,3],
+    scores: [9.03, 9.10, 8.50, 8.53, 8.73, 8.77, 8.33, 8.47, 8.27, 8.80] },
+  { label: "V4",    key: "d", color: "#7F77DD", fill: "rgba(127,119,221,0.15)", dash: [],
+    scores: [9.00, 8.97, 8.67, 8.90, 8.97, 9.07, 9.20, 9.13, 8.67, 9.13] },
+];
+
+const CX = 280, CY = 230, R = 165, N = PARAMS.length;
+const MIN_VAL = 6.5, MAX_VAL = 9.5;
+
+const active = { a: true, b: true, c: true, d: true };
+
+function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
+function toXY(val, i) {
+  const pct = (val - MIN_VAL) / (MAX_VAL - MIN_VAL);
+  const r = pct * R;
+  return [CX + r * Math.cos(angle(i)), CY + r * Math.sin(angle(i))];
+}
+
+function buildControls() {
+  const c = document.getElementById("controls");
+  c.innerHTML = "";
+  VERSIONS.forEach(v => {
+    const btn = document.createElement("button");
+    btn.className = "toggle-btn" + (active[v.key] ? " active" : "");
+    btn.textContent = v.label;
+    if (active[v.key]) btn.style.background = v.color;
+    btn.onclick = () => {
+      active[v.key] = !active[v.key];
+      draw();
+      buildControls();
+    };
+    c.appendChild(btn);
+  });
+}
+
+function buildLegend() {
+  const l = document.getElementById("legend");
+  l.innerHTML = "";
+  VERSIONS.forEach(v => {
+    if (!active[v.key]) return;
+    const item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = `<span class="legend-sq" style="background:${v.color}"></span><span style="color:${v.color};font-weight:500;">${v.label}</span>`;
+    l.appendChild(item);
+  });
+}
+
+function draw() {
+  const svg = document.getElementById("radar");
+  svg.innerHTML = "";
+
+  const isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const gridCol = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const textCol = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.4)";
+  const valCol  = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.18)";
+
+  const RINGS = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5];
+
+  RINGS.forEach(rv => {
+    const pts = PARAMS.map((_, i) => toXY(rv, i).join(",")).join(" ");
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    poly.setAttribute("points", pts);
+    poly.setAttribute("fill", "none");
+    poly.setAttribute("stroke", gridCol);
+    poly.setAttribute("stroke-width", rv === 9.0 ? "1.2" : "0.7");
+    svg.appendChild(poly);
+
+    const [lx, ly] = toXY(rv, 0);
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", lx + 4);
+    t.setAttribute("y", ly - 3);
+    t.setAttribute("font-size", "9");
+    t.setAttribute("fill", valCol);
+    t.textContent = rv.toFixed(1);
+    svg.appendChild(t);
+  });
+
+  PARAMS.forEach((_, i) => {
+    const [ex, ey] = toXY(MAX_VAL + 0.05, i);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", CX); line.setAttribute("y1", CY);
+    line.setAttribute("x2", ex); line.setAttribute("y2", ey);
+    line.setAttribute("stroke", gridCol); line.setAttribute("stroke-width", "0.7");
+    svg.appendChild(line);
+  });
+
+  PARAMS.forEach((name, i) => {
+    const [lx, ly] = toXY(MAX_VAL + 0.38, i);
+    const a = angle(i);
+    const anchor = Math.abs(Math.cos(a)) < 0.1 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", lx);
+    t.setAttribute("y", ly + 4);
+    t.setAttribute("text-anchor", anchor);
+    t.setAttribute("font-size", "11");
+    t.setAttribute("font-family", "var(--font-sans, sans-serif)");
+    t.setAttribute("fill", textCol);
+    t.textContent = name;
+    svg.appendChild(t);
+  });
+
+  [...VERSIONS].reverse().forEach(v => {
+    if (!active[v.key]) return;
+
+    const pts = v.scores.map((s, i) => toXY(s, i).join(",")).join(" ");
+
+    const fillPoly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    fillPoly.setAttribute("points", pts);
+    fillPoly.setAttribute("fill", v.fill);
+    fillPoly.setAttribute("stroke", "none");
+    svg.appendChild(fillPoly);
+
+    const strokePoly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    strokePoly.setAttribute("points", pts);
+    strokePoly.setAttribute("fill", "none");
+    strokePoly.setAttribute("stroke", v.color);
+    strokePoly.setAttribute("stroke-width", v.key === "d" ? "2" : "1.3");
+    if (v.dash.length) strokePoly.setAttribute("stroke-dasharray", v.dash.join(" "));
+    svg.appendChild(strokePoly);
+
+    v.scores.forEach((s, i) => {
+      const [px, py] = toXY(s, i);
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", px); dot.setAttribute("cy", py);
+      dot.setAttribute("r", "3.5");
+      dot.setAttribute("fill", v.color);
+      svg.appendChild(dot);
+    });
+  });
+
+  buildLegend();
+}
+
+buildControls();
+draw();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+</script>
+
+<script>
+const params = [
+  { name: "Human-likeness", a: 7.53, b: 8.63, c: 9.03, d: 9.00, win: "c" },
+  { name: "Natural voice",  a: 7.77, b: 8.70, c: 9.10, d: 8.97, win: "c" },
+  { name: "Emotional engmt",a: 7.10, b: 8.27, c: 8.50, d: 8.67, win: "d" },
+  { name: "Memorability",   a: 7.30, b: 8.53, c: 8.53, d: 8.90, win: "d" },
+  { name: "Flow & rhythm",  a: 8.10, b: 8.70, c: 8.73, d: 8.97, win: "d" },
+  { name: "Clarity",        a: 9.00, b: 9.00, c: 8.77, d: 9.07, win: "d" },
+  { name: "Specificity",    a: 7.20, b: 9.07, c: 8.33, d: 9.20, win: "d" },
+  { name: "Persuasiveness", a: 7.90, b: 8.83, c: 8.47, d: 9.13, win: "d" },
+  { name: "Conciseness",    a: 8.73, b: 7.83, c: 8.27, d: 8.67, win: "a" },
+  { name: "Overall impact", a: 7.80, b: 8.83, c: 8.80, d: 9.13, win: "d" },
+];
+
+const colors = { a: "#378ADD", b: "#1D9E75", c: "#D4537E", d: "#7F77DD" };
+const MIN = 6.5, MAX = 9.5;
+
+const container = document.getElementById("params");
+
+params.forEach(p => {
+  const row = document.createElement("div");
+  row.className = "param-row";
+
+  const nameDiv = document.createElement("div");
+  nameDiv.className = "param-name";
+  nameDiv.textContent = p.name;
+  row.appendChild(nameDiv);
+
+  const barsDiv = document.createElement("div");
+  barsDiv.className = "bar-group";
+
+  ["a","b","c","d"].forEach(k => {
+    const val = p[k];
+    const pct = ((val - MIN) / (MAX - MIN)) * 100;
+    const isWin = p.win === k;
+
+    const wrap = document.createElement("div");
+    wrap.className = "bar-wrap";
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.cssText = `width: ${pct.toFixed(1)}%; background: ${colors[k]}; opacity: ${isWin ? "1" : "0.45"};`;
+    if (isWin) bar.style.outline = `1.5px solid ${colors[k]}`;
+
+    const valLabel = document.createElement("div");
+    valLabel.className = "bar-val";
+    valLabel.textContent = val.toFixed(2) + (isWin ? " ★" : "");
+    if (isWin) valLabel.style.color = colors[k];
+
+    wrap.appendChild(bar);
+    wrap.appendChild(valLabel);
+    barsDiv.appendChild(wrap);
+  });
+
+  row.appendChild(barsDiv);
+  container.appendChild(row);
+});
+</script>
+</body>
+</html>
