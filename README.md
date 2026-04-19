@@ -79,7 +79,13 @@ All version SKILL.md files live under [`skill/`](skill/).
 
 ---
 
-## Installation
+## Installation 
+
+### Install from Smithery
+
+https://smithery.ai/skills/vinceshine6789/blog-writer
+
+### Install Manually
 
 The skill is a single Markdown file. Installation means placing it where your AI tool reads its instructions.
 
