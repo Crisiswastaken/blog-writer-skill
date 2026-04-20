@@ -169,6 +169,15 @@ The skill will not replace your numbers with generic ones, invent anecdotes you 
 
 ---
 
+## Tips and Recommended Workflow
+
+- Batch Generation: If you're using tools like github copilot that use request based pricing rather than token-based, consider generating in batches. For example, write a bunch of skeletons or vomit drafts, or provide a long list of topics, and then run the skill on all of them at once. This can be more cost effective and also allows you to maintain a consistent voice across multiple posts. This is especially useful if you want to populate a blog with multiple posts at once, or if you want to create a series of related posts that build on each other.
+- Iterative Refinement: If the first output isn't exactly what you want, you can take the generated blog and feed it back into the skill with additional instructions for refinement. For example, you could ask it to make the tone more casual, or to add more examples, or to focus more on a particular section. This allows you to have more control over the final output while still leveraging the skill's ability to structure and polish your writing.
+- Use the skill as a collaborator: Instead of thinking of the skill as a tool that produces a finished product, you can think of it as a writing partner. You can start a draft, run it through the skill to get a polished version, and then go back and forth, making edits and running it through the skill again to refine it further. This iterative process can help you develop your ideas more fully and create a final product that you're really happy with.
+- The Skill was developed with the average solo developer in mind. So devs who want to add blogs to their personal site, or founders who want to write about their startup journey, or anyone who wants to share their thoughts in a more polished way without hiring a writer. If you're a professional content creator or marketer looking for SEO-optimized content, this skill might not be the best fit for your needs. It's designed to create authentic, human-like writing rather than content that is optimized for search engines.
+
+---
+
 ## What the Output Looks Like
 
 From V4, topic: product tours ([full post](examples/product-tour-d.md)):
