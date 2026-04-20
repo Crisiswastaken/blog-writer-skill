@@ -30,6 +30,8 @@ The skill was developed across four versions and evaluated by a three-model LLM 
 
 ### Ensemble Results
 
+https://crisiswastaken.github.io/blog-writer-skill/
+
 | Parameter | Alpha | V2 | V3 | V4 | Winner |
 |---|---:|---:|---:|---:|:---:|
 | Human-likeness | 7.53 | 8.63 | **9.03** | 9.00 | V3 |
